@@ -16,7 +16,7 @@ from queue import Queue, Empty
 LOGFILE = '/root/camDashboard.log'
 CAM_NAME = "Giotti"
 CAM_NBR = 6
-RTSP_URL = "rtsp://admin:Whoo1124@10.42.0.182:554/h264Preview_01_sub"
+RTSP_URL = "rtsp://admin:password@10.42.0.182:554/h264Preview_01_sub"
 OUTPUT_DIR = "/dev/shm/mjpeg"
 STORAGE_DIR = f"/nfsshare/raspinas/cam/Reo_{CAM_NAME}"  # hier komen de uiteindelijke MP4's
 UPLOAD_URL = "http://geert.zapto.org/insteon/cam/upload_image.php"
