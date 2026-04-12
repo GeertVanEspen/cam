@@ -20,7 +20,7 @@ if CAM_NBR == 1:
 if CAM_NBR == 4:
   CAM_NAME = "frontwindow"
 
-RTSP_URL = f"rtsp://admin:Whoo1124@{CAM_NAME}:554/h264Preview_01_sub"
+RTSP_URL = f"rtsp://admin:password@{CAM_NAME}:554/h264Preview_01_sub"
 
 # === MOTION CONFIG (pas aan naar wens) ===
 MOTION_THRESHOLD = 1000           # aantal veranderde pixels → tune dit!
