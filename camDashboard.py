@@ -29,8 +29,8 @@ PRE_BUFFER_SIZE    = int(PRE_RECORD_SECONDS * FPS_ESTIMATE)   # ≈ 50
 DEBUG = False
 
 # Basic Auth credentials (.htaccess)
-USERNAME = "geert"      # <-- vul in
-PASSWORD = "Brompt1124" # <-- vul in
+USERNAME = "username"      # <-- vul in
+PASSWORD = "password" # <-- vul in
 
 # Hoe vaak uploaden? (1 = elk frame, 5 = elke 5e frame ≈ 2 fps)
 UPLOAD_EVERY_N_FRAMES = 1
