@@ -1,7 +1,7 @@
 """
-config_private.py
+camDashboard_config_private.py
 Gevoelige configuratie voor camDashboard.py
-DIT BESTAND MAG NOOIT IN GITHUB KOMEN!
+DIT BESTAND MAG NOOIT IN GITHUB KOMEN TENZIJ DUMMY PASSWORDS!
 """
 
 # ===================== GEVOELIGE CONFIG =====================
