@@ -1,6 +1,8 @@
 """
 Python script to detect MPA-cars from pictures.
 
+MPA_pictures.py v1.0
+
 TODO:
 - knop "herstart inspecteur": boodschap "restarting" blijft -> javascript
 - bug: de volgende morgen geen stats meer
@@ -72,6 +74,8 @@ area_points = None
 imageCtr = 0
 first_frame = None
 frame = None
+ref_frame_roof_donker = None
+ref_frame_roof_licht = None
 
 os.makedirs(IMAGE_DIR, exist_ok=True)
 os.makedirs(DETECTED_DIR, exist_ok=True)
@@ -94,7 +98,9 @@ def main():
   global ref_gray_roi, last_ref_update_time
   global area_points, imageCtr, frame, first_frame
   global daily_car_count, no_car_streak, current_fps, fps_frame_count
-  global last_stats_upload_time
+  global last_stats_upload_time, last_stats_upload_frame
+  global ref_frame_roof_donker, ref_frame_roof_licht
+
 
   last_stats_upload_time = time.time()
 
@@ -120,6 +126,11 @@ def main():
     logger(f"FOUT: Kon {CONFIG_FILE} niet laden. Gebruik standaard waarden. Error: {e}")
     area_points = np.array([[234, 168], [300, 158], [446, 235], [375, 256], [258, 267], [235, 169]], np.int32)
 
+  ref_frame_roof_donker = cv2.imread("MPA_roof_donker.jpg", cv2.IMREAD_GRAYSCALE)
+  ref_frame_roof_licht = cv2.imread("MPA_roof_licht.jpg", cv2.IMREAD_GRAYSCALE)
+  
+  if ref_frame_roof_donker is not None: logger("Ref donker jpg geladen.")
+  if ref_frame_roof_licht is not None: logger("Ref licht jpg geladen.")
 
   detector = LightConditionDetector(51.22, 4.40)
   last_processed_key = None            # (bestandsnaam, mtime_ns)
@@ -438,6 +449,12 @@ def detectMPA(filenameImage, cond):
           white_percentage < 100 and
           aspect_within_limits
       )
+
+    mpa_roof_confidence = None
+    if decision:
+      mpa_roof_confidence = calculate_roof_confidence(gray_roof, cond)
+      #if mpa_roof_confidence is not None and mpa_roof_confidence < 0.5: decision = False
+
     if decision:
       hit_counter += 1
     else:
@@ -451,7 +468,7 @@ def detectMPA(filenameImage, cond):
     )
 
     if decision:
-      logger("MPA car detected!")
+      logger(f"MPA car detected! conf:{mpa_roof_confidence}")
       daily_mpa_count += 1
 
       # Add some debug info to the frame.
@@ -471,7 +488,7 @@ def detectMPA(filenameImage, cond):
       cv2.putText(frame, coord_text, (text_x, text_y),
                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-      cv2.putText(frame, f"MPA w:{white_percentage} h:{homogeneity} s:{avg_saturation} {percentage_diff:.1f}", (x1, roof_y1 - 5),
+      cv2.putText(frame, f"MPA w:{white_percentage} h:{homogeneity} s:{avg_saturation} r:{percentage_diff:.1f} c:{mpa_roof_confidence:.2f}", (x1, roof_y1 - 5),
                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
       cv2.rectangle(frame, (roof_x1, roof_y1), (roof_x2, roof_y2), (255, 100, 0), 2)
 
@@ -510,6 +527,36 @@ def detectMPA(filenameImage, cond):
 def is_allowed_time():
   now = datetime.now().time()
   return dt_time(9, 0) <= now <= dt_time(23, 59)
+
+########################################################################
+#                                                                      #
+#       calculate_roof_confidence                                      #
+#                                                                      #
+########################################################################
+def calculate_roof_confidence(uitsnede, conditie):
+  # 1. Selecteer de juiste referentie
+  ref = ref_frame_roof_licht if conditie == "licht" else ref_frame_roof_donker
+
+  # 2. Check of de referentie geladen is
+  if ref is None or uitsnede is None: return None
+
+  # 3. Rescale de uitsnede naar het formaat van de referentie
+  # ref.shape geeft (hoogte, breedte). cv2.resize verwacht (breedte, hoogte).
+  ref_h, ref_w = ref.shape
+  if uitsnede.shape[0] != ref_h or uitsnede.shape[1] != ref_w:
+    uitsnede = cv2.resize(uitsnede, (ref_w, ref_h), interpolation=cv2.INTER_AREA)
+
+  # 4. Bereken het verschil
+  diff = cv2.absdiff(uitsnede, ref)
+  mean_diff = np.mean(diff)
+
+  # 5. Normaliseer naar 0.0 - 1.0
+  # We gebruiken 60 als 'omslagpunt' voor 0 confidence,
+  # maar dit kun je tunen op basis van je testresultaten.
+  max_acceptable_diff = 60
+  confidence = 1.0 - (mean_diff / max_acceptable_diff)
+
+  return max(0.0, min(1.0, confidence))
 
 ########################################################################
 #                                                                      #
