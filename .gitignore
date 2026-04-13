@@ -1,0 +1,26 @@
+# Gevoelige / privé configuratie
+camDashboard_config_private.py
+secrets.py
+*.private
+*.secret
+.env
+
+# Python cache en rommel
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Logs
+*.log
+camDashboard.log
+
+# Temporary files
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Overige
+*.bak
+*.tmp
