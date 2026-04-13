@@ -7,7 +7,7 @@ DIT BESTAND MAG NOOIT IN GITHUB KOMEN!
 # ===================== GEVOELIGE CONFIG =====================
 
 # RTSP stream (bevat wachtwoord)
-RTSP_URL = "rtsp://admin:password@10.42.0.182:554/h264Preview_01_sub"
+RTSP_URL = "rtsp://admin:password@ipcam:554/h264Preview_01_sub"
 
 # Basic Auth voor de upload naar je webserver
 USERNAME = "username"
