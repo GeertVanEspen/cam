@@ -49,7 +49,7 @@ MOTION_COOLDOWN_SECONDS = 8       # hoe lang na laatste beweging nog doorgaan me
 CLIPS_RAM_DIR = f"/dev/shm/motion_clips{CAM_NBR}"   # tijdelijke opslag (RAM = bliksemsnel)
 STORAGE_DIR = f"/nfsshare/raspinas/cam/Reo_{CAM_NAME}"  # hier komen de uiteindelijke MP4's
 
-# ===================== GEVOELIGE CONFIG (uit config_private.py) =====================
+# ===================== GEVOELIGE CONFIG (uit camDashboard_config_private.py) =====================
 try:
   from camDashboard_config_private import RTSP_URL, USERNAME, PASSWORD, CLOUD_REMOTE
 except ImportError:
