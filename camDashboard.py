@@ -1,3 +1,5 @@
+# https://github.com/GeertVanEspen/cam
+
 import cv2
 import time
 from datetime import datetime
@@ -16,21 +18,15 @@ from queue import Queue, Empty
 LOGFILE = '/root/camDashboard.log'
 CAM_NAME = "Giotti"
 CAM_NBR = 6
-RTSP_URL = "rtsp://admin:password@10.42.0.182:554/h264Preview_01_sub"
 OUTPUT_DIR = "/dev/shm/mjpeg"
 STORAGE_DIR = f"/nfsshare/raspinas/cam/Reo_{CAM_NAME}"  # hier komen de uiteindelijke MP4's
 UPLOAD_URL = "http://geert.zapto.org/insteon/cam/upload_image.php"
-CLOUD_REMOTE = "onedrive:/cam/ReoMPA"
 LOCAL_TEMP_DIR = "/tmp"   # hier ffmpegt hij lokaal (bliksemsnel, geen NFS)
 
 PRE_RECORD_SECONDS = 3
 FPS_ESTIMATE       = 10               # schatting van je substream
 PRE_BUFFER_SIZE    = int(PRE_RECORD_SECONDS * FPS_ESTIMATE)   # ≈ 50
 DEBUG = False
-
-# Basic Auth credentials (.htaccess)
-USERNAME = "username"      # <-- vul in
-PASSWORD = "password" # <-- vul in
 
 # Hoe vaak uploaden? (1 = elk frame, 5 = elke 5e frame ≈ 2 fps)
 UPLOAD_EVERY_N_FRAMES = 1
@@ -53,6 +49,13 @@ MOTION_COOLDOWN_SECONDS = 8       # hoe lang na laatste beweging nog doorgaan me
 CLIPS_RAM_DIR = f"/dev/shm/motion_clips{CAM_NBR}"   # tijdelijke opslag (RAM = bliksemsnel)
 STORAGE_DIR = f"/nfsshare/raspinas/cam/Reo_{CAM_NAME}"  # hier komen de uiteindelijke MP4's
 
+# ===================== GEVOELIGE CONFIG (uit config_private.py) =====================
+try:
+  from camDashboard_config_private import RTSP_URL, USERNAME, PASSWORD, CLOUD_REMOTE
+except ImportError:
+  print("ERROR: config_private.py niet gevonden!")
+  print("Maak een camDashboard_config_private.py bestand aan met je wachtwoorden.")
+  exit(1)
 
 # ===================== BACKGROUND ENCODING =====================
 ENCODING_QUEUE = Queue(maxsize=5)   # max 5 taken in queue (veilig)
