@@ -4,9 +4,8 @@ Python script to detect MPA-cars from pictures.
 MPA_pictures.py v1.0
 
 TODO:
-- knop "herstart inspecteur": boodschap "restarting" blijft -> javascript
-- bug: de volgende morgen geen stats meer
 - Verbeteren false positives: extra controle door vergelijking met echte ANPR bar
+- website ap (lokaal): index.html -> keuze tussen "hotspot" en "dashboard cam"
 
 """
 
@@ -97,7 +96,8 @@ def main():
   global max1, max2
   global ref_gray_roi, last_ref_update_time
   global area_points, imageCtr, frame, first_frame
-  global daily_car_count, no_car_streak, current_fps, fps_frame_count
+  global daily_car_count, daily_mpa_count, no_car_streak
+  global current_fps, fps_frame_count
   global last_stats_upload_time, last_stats_upload_frame
   global ref_frame_roof_donker, ref_frame_roof_licht
 
@@ -128,7 +128,7 @@ def main():
 
   ref_frame_roof_donker = cv2.imread("MPA_roof_donker.jpg", cv2.IMREAD_GRAYSCALE)
   ref_frame_roof_licht = cv2.imread("MPA_roof_licht.jpg", cv2.IMREAD_GRAYSCALE)
-  
+
   if ref_frame_roof_donker is not None: logger("Ref donker jpg geladen.")
   if ref_frame_roof_licht is not None: logger("Ref licht jpg geladen.")
 
@@ -371,6 +371,7 @@ def detectMPA(filenameImage, cond):
     # Snij de nieuwe, kleinere ROI uit.
     roof_roi = frame[roof_y1:roof_y2, roof_x1:roof_x2]
     if roof_roi is None or roof_roi.size == 0: continue
+    roof_roi2 = frame[roof_y1 - 15 : roof_y2 + 5, roof_x1 - 20 : roof_x2 + 20].copy()
 
     # Snij ook uit in het basisframe.
     first_roof_roi = first_frame[roof_y1:roof_y2, roof_x1:roof_x2]
@@ -452,7 +453,7 @@ def detectMPA(filenameImage, cond):
 
     mpa_roof_confidence = None
     if decision:
-      mpa_roof_confidence = calculate_roof_confidence(gray_roof, cond)
+      mpa_roof_confidence = calculate_roof_confidence(roof_roi2, cond)
       #if mpa_roof_confidence is not None and mpa_roof_confidence < 0.5: decision = False
 
     if decision:
@@ -488,7 +489,10 @@ def detectMPA(filenameImage, cond):
       cv2.putText(frame, coord_text, (text_x, text_y),
                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-      cv2.putText(frame, f"MPA w:{white_percentage} h:{homogeneity} s:{avg_saturation} r:{percentage_diff:.1f} c:{mpa_roof_confidence:.2f}", (x1, roof_y1 - 5),
+      mpa_rc = "?"
+      if mpa_roof_confidence is not None: mpa_rc = f"{mpa_roof_confidence:.2f}"
+
+      cv2.putText(frame, f"MPA w:{white_percentage} h:{homogeneity} s:{avg_saturation} r:{percentage_diff:.1f} c:{mpa_rc}", (x1, roof_y1 - 5),
                   cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 100, 0), 2)
       cv2.rectangle(frame, (roof_x1, roof_y1), (roof_x2, roof_y2), (255, 100, 0), 2)
 
@@ -534,29 +538,38 @@ def is_allowed_time():
 #                                                                      #
 ########################################################################
 def calculate_roof_confidence(uitsnede, conditie):
-  # 1. Selecteer de juiste referentie
   ref = ref_frame_roof_licht if conditie == "licht" else ref_frame_roof_donker
 
-  # 2. Check of de referentie geladen is
   if ref is None or uitsnede is None: return None
 
-  # 3. Rescale de uitsnede naar het formaat van de referentie
-  # ref.shape geeft (hoogte, breedte). cv2.resize verwacht (breedte, hoogte).
-  ref_h, ref_w = ref.shape
-  if uitsnede.shape[0] != ref_h or uitsnede.shape[1] != ref_w:
-    uitsnede = cv2.resize(uitsnede, (ref_w, ref_h), interpolation=cv2.INTER_AREA)
+  try:
+    uitsnede_gray = to_gray(uitsnede)
+    ref_gray = to_gray(ref)
 
-  # 4. Bereken het verschil
-  diff = cv2.absdiff(uitsnede, ref)
-  mean_diff = np.mean(diff)
+    res = cv2.matchTemplate(uitsnede_gray, ref_gray, cv2.TM_CCOEFF_NORMED)
 
-  # 5. Normaliseer naar 0.0 - 1.0
-  # We gebruiken 60 als 'omslagpunt' voor 0 confidence,
-  # maar dit kun je tunen op basis van je testresultaten.
-  max_acceptable_diff = 60
-  confidence = 1.0 - (mean_diff / max_acceptable_diff)
+    _, max_val, _, _ = cv2.minMaxLoc(res)
 
-  return max(0.0, min(1.0, confidence))
+    return max_val
+
+  except Exception as e:
+    print(f"Match fout: {e}")
+    return 0.0
+
+def to_gray(img):
+  if img is None: return None
+
+  # Case 1: puur grayscale (h, w)
+  if len(img.shape) == 2: return img
+
+  # Case 2: (h, w, 1) → squeeze naar (h, w)
+  if len(img.shape) == 3 and img.shape[2] == 1: return img[:, :, 0]
+
+  # Case 3: (h, w, 3) → echte kleur
+  if len(img.shape) == 3 and img.shape[2] == 3: return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+  # fallback (zeldzaam)
+  return img
 
 ########################################################################
 #                                                                      #
@@ -638,48 +651,6 @@ def notifications_enabled() -> bool:
   except Exception as e:
     logger(f"❌ Check meldingen error: {e}")
     return False
-
-########################################################################
-#                                                                      #
-#       findVideo                                                      #
-#                                                                      #
-########################################################################
-def findVideoOLD(tstamp):
-  ref_time = datetime.strptime(tstamp, "%Y%m%d_%H%M%S")
-
-  timeout = 300  # 5 minuten
-  interval = 5   # 5 seconden
-  start_time = time.time()
-
-  while True:
-    found_files = []
-
-    for filename in os.listdir("/tmp"):
-      if filename.endswith(".mp4.ready") and filename.startswith("motion_"):
-        try:
-          # Extract timestamp uit filename
-          # motion_20260401_142940.mp4.ready
-          ts_part = filename[len("motion_"):-len(".mp4.ready")]
-          file_time = datetime.strptime(ts_part, "%Y%m%d_%H%M%S")
-        except ValueError:
-          continue  # skip bestanden met onverwacht formaat
-
-        if file_time > ref_time:
-          full_path = os.path.join("/tmp", filename)
-          found_files.append((file_time, full_path))
-
-    if found_files:
-      # Sorteer op timestamp (oudste eerst)
-      found_files.sort()
-      ready_file = found_files[0][1]
-
-      # Verwijder .ready extensie
-      return ready_file[:-6]
-
-    # Timeout check
-    if time.time() - start_time > timeout: return ""
-
-    time.sleep(interval)
 
 ########################################################################
 #                                                                      #
@@ -809,12 +780,12 @@ def try_upload_statistics():
   # Tijd-gebaseerde check
   now = time.time()
   if now - last_stats_upload_time < STATS_UPLOAD_INTERVAL:
-    logger(f"try_upload_statistics: too soon {now} {last_stats_upload_time}")
+    #logger(f"try_upload_statistics: too soon {now} {last_stats_upload_time}")
     return False
 
   # Frame-gebaseerde check
   if last_stats_upload_frame > 0 and (imageCtr - last_stats_upload_frame) < MIN_FRAMES_BETWEEN_UPLOADS:
-    logger(f"try_upload_statistics: Too soon {last_stats_upload_frame} {imageCtr}")
+    #logger(f"try_upload_statistics: Too soon {last_stats_upload_frame} {imageCtr}")
     return False
 
   payload = {
