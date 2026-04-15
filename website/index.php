@@ -23,7 +23,7 @@ $title = "MPA Detector v1.0";
             </div>
         </header>
 
-        <!-- Meldingen -->
+        <!-- Meldingen ->
         <div class="card">
             <h2>Meldingen</h2>
             <div class="toggle-container">
@@ -36,17 +36,32 @@ $title = "MPA Detector v1.0";
                     📊 Bekijk Statistieken
                 </button>
             </a>
-        </div>
-
-        <!-- Knop naar statistieken -->
-        <!--div class="card" style="text-align: center; margin-top: 10px;">
-            <a href="stats.php" style="text-decoration: none;">
-                <button style="width: 100%; padding: 16px; font-size: 1.1rem; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer;">
-                    📊 Bekijk Statistieken
-                </button>
-            </a>
         </div -->
 
+        <!-- Meldingen + Statistieken knop naast elkaar -->
+        <div class="card" style="display: flex; gap: 15px; align-items: stretch;">
+            
+            <!-- Meldingen card (bestaande functionaliteit) -->
+            <div style="flex: 1;">
+                <h2>Meldingen</h2>
+                <div class="toggle-container">
+                    <button id="toggle-meldingen" class="toggle-btn">
+                        <span id="toggle-text">Meldingen AAN</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Statistieken knop -->
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                <a href="stats.php" style="text-decoration: none; width: 100%;">
+                    <button style="width: 100%; height: 100%; padding: 18px 20px; font-size: 1.05rem; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer;">
+                        📊 Statistieken
+                    </button>
+                </a>
+            </div>
+
+        </div>
+        
         <!-- Statistieken -->
         <div class="card">
             <h2>Statistieken sinds deze of gisteren morgen</h2>

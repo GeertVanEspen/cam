@@ -141,3 +141,12 @@ body {
     color: #fda4af;
 }
 
+ /* Statistieken knop naast meldingen */
+.card {
+    display: block; /* reset voor andere cards */
+}
+
+.toggle-container {
+    margin-top: 8px;
+}
+
