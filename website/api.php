@@ -9,6 +9,52 @@ $media_dir = "./media";
 $log_file = "/home/wwwdata/mpa_upload.log";
 $melding_file = "/home/wwwdata/melding.uit";
 
+
+// ====================== STATISTIEKEN OVERZICHT ======================
+if (isset($_GET['type']) && $_GET['type'] === 'stats_overview') {
+    $result = [
+        'today'      => ['cars' => 0, 'mpa' => 0],
+        'yesterday'  => ['cars' => 0, 'mpa' => 0],
+        'this_week'  => ['cars' => 0, 'mpa' => 0],
+        'this_month' => ['cars' => 0, 'mpa' => 0]
+    ];
+
+    try {
+        if (file_exists($db_path)) {
+            $pdo = new PDO("sqlite:" . $db_path);
+
+            $queries = [
+                'today'     => "date(timestamp) = date('now', 'localtime')",
+                'yesterday' => "date(timestamp) = date('now', '-1 day', 'localtime')",
+                'this_week' => "strftime('%Y-%W', timestamp) = strftime('%Y-%W', 'now', 'localtime')",
+                'this_month'=> "strftime('%Y-%m', timestamp) = strftime('%Y-%m', 'now', 'localtime')"
+            ];
+
+            foreach ($queries as $key => $where) {
+                $stmt = $pdo->prepare("
+                    SELECT MAX(daily_car_count) as cars, MAX(daily_mpa_count) as mpa
+                    FROM mpa_stats
+                    WHERE $where
+                ");
+                $stmt->execute();
+                if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $result[$key] = [
+                        'cars' => (int)$row['cars'],
+                        'mpa'  => (int)$row['mpa']
+                    ];
+                }
+            }
+        }
+    } catch (Exception $e) {
+        // Bij error blijven de waarden op 0
+    }
+
+    echo json_encode($result);
+    exit;
+}
+
+
+
 $response = [
     'status' => 'success',
     'server_time' => date('H:i:s'),

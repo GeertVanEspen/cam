@@ -31,7 +31,21 @@ $title = "MPA Detector v1.0";
                     <span id="toggle-text">Meldingen AAN</span>
                 </button>
             </div>
+            <a href="stats.php" style="text-decoration:none;">
+                <button style="width:100%; padding:14px; margin-top:15px; background:#3b82f6; color:white; border:none; border-radius:12px; font-size:1.05rem;">
+                    📊 Bekijk Statistieken
+                </button>
+            </a>
         </div>
+
+        <!-- Knop naar statistieken -->
+        <!--div class="card" style="text-align: center; margin-top: 10px;">
+            <a href="stats.php" style="text-decoration: none;">
+                <button style="width: 100%; padding: 16px; font-size: 1.1rem; background: #3b82f6; color: white; border: none; border-radius: 12px; cursor: pointer;">
+                    📊 Bekijk Statistieken
+                </button>
+            </a>
+        </div -->
 
         <!-- Statistieken -->
         <div class="card">
