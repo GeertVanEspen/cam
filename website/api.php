@@ -69,6 +69,7 @@ $response = [
     'log_lines' => []
 ];
 
+// Detector online status
 try {
     if (file_exists($db_path)) {
         $pdo = new PDO("sqlite:" . $db_path);

@@ -1,60 +1,110 @@
-// ==================== STATS HANDLING ====================
-function handle_stats_upload() {
-    global $log_bestand, $tijd;
+<?php
+// website/api.php - Schone en consistente dashboard API
+header('Content-Type: application/json');
 
-    $log_regel = "[$tijd] stats upload ontvangen" . PHP_EOL;
-    file_put_contents($log_bestand, $log_regel, FILE_APPEND);
+date_default_timezone_set('Europe/Brussels');
 
-    $daily_car_count = (int)($_POST['daily_car_count'] ?? 0);
-    $daily_mpa_count = (int)($_POST['daily_mpa_count'] ?? 0);
-    $current_fps     = (float)($_POST['current_fps'] ?? 0.0);
-    $imageCtr        = (int)($_POST['imageCtr'] ?? 0);
+$db_path = "/home/wwwdata/mpa_stats.db";
+$media_dir = "./media";
+$log_file = "/home/wwwdata/mpa_upload.log";
+$melding_file = "/home/wwwdata/melding.uit";
 
-    $db_path = "/home/wwwdata/mpa_stats.db";
+$response = [
+    'status' => 'success',
+    'server_time' => date('H:i:s'),
+    'detector_online' => false,
+    'detector_status_text' => 'Offline',
+    'last_db_entry_minutes_ago' => null,
+    'meldingen_aan' => !file_exists($melding_file),
+    'stats' => ['car_count' => 0, 'mpa_count' => 0, 'fps' => 0.0],
+    'latest_photo' => null,
+    'latest_video' => null,
+    'recent_photos' => [],
+    'log_lines' => []
+];
 
-    try {
+// ====================== DETECTOR ONLINE STATUS ======================
+try {
+    if (file_exists($db_path)) {
         $pdo = new PDO("sqlite:" . $db_path);
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-        // === 1. Nieuwe stats invoegen ===
-        $stmt = $pdo->prepare("
-            INSERT INTO mpa_stats 
-            (daily_car_count, daily_mpa_count, current_fps, imageCtr)
-            VALUES (:cars, :mpa, :fps, :imgctr)
+        $stmt = $pdo->query("
+            SELECT ROUND((strftime('%s', 'now', 'localtime') - strftime('%s', timestamp)) / 60.0, 1) AS minutes_ago
+            FROM mpa_stats 
+            ORDER BY timestamp DESC 
+            LIMIT 1
         ");
 
-        $stmt->execute([
-            ':cars'    => $daily_car_count,
-            ':mpa'     => $daily_mpa_count,
-            ':fps'     => $current_fps,
-            ':imgctr'  => $imageCtr
-        ]);
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $minutes_ago = (float)$row['minutes_ago'];
+            $response['last_db_entry_minutes_ago'] = $minutes_ago;
 
-        // === 2. Opruimen: verwijder records ouder dan 1 jaar ===
-        $pdo->exec("
-            DELETE FROM mpa_stats 
-            WHERE timestamp < datetime('now', '-1 year', 'localtime')
-        ");
-
-        $deleted = $pdo->query("SELECT changes()")->fetchColumn();
-
-        $log_regel = "[$tijd] stats opgeslagen in DB: cars=$daily_car_count, mpa=$daily_mpa_count, fps=$current_fps";
-        if ($deleted > 0) {
-            $log_regel .= " | $deleted oude records opgeruimd (ouder dan 1 jaar)";
+            if ($minutes_ago <= 7) {
+                $response['detector_online'] = true;
+                $response['detector_status_text'] = 'Online';
+            } else {
+                $hours = floor($minutes_ago / 60);
+                $mins = floor($minutes_ago % 60);
+                if ($hours >= 1) {
+                    $response['detector_status_text'] = "Offline ({$hours}u {$mins}m geleden)";
+                } else {
+                    $response['detector_status_text'] = "Offline ({$mins}m geleden)";
+                }
+            }
         }
-        $log_regel .= PHP_EOL;
+    }
+} catch (Exception $e) {
+    $response['detector_status_text'] = 'Offline (DB-fout)';
+}
 
-        file_put_contents($log_bestand, $log_regel, FILE_APPEND);
+// ====================== STATISTIEKEN ======================
+try {
+    if (file_exists($db_path)) {
+        $pdo = new PDO("sqlite:" . $db_path);
+        $stmt = $pdo->query("SELECT * FROM mpa_stats ORDER BY timestamp DESC LIMIT 1");
+        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $response['stats'] = [
+                'car_count' => (int)$row['daily_car_count'],
+                'mpa_count' => (int)$row['daily_mpa_count'],
+                'fps' => round((float)$row['current_fps'], 1)
+            ];
+        }
+    }
+} catch (Exception $e) {}
 
-        echo json_encode([
-            'status' => 'success',
-            'message' => 'Statistics saved to database'
-        ]);
+// ====================== LAATSTE FOTO + VIDEO ======================
+$jpg_files = glob($media_dir . "/*.jpg");
+if (!empty($jpg_files)) {
+    usort($jpg_files, fn($a, $b) => filemtime($b) - filemtime($a));
+    $latest_jpg = $jpg_files[0];
+    $base_name = pathinfo($latest_jpg, PATHINFO_FILENAME);
 
-    } catch (Exception $e) {
-        $log_regel = "[$tijd] DB error: " . $e->getMessage() . PHP_EOL;
-        file_put_contents($log_bestand, $log_regel, FILE_APPEND);
-        http_response_code(500);
-        echo json_encode(['status' => 'error', 'message' => 'Database error']);
+    $response['latest_photo'] = [
+        'url' => basename($latest_jpg),
+        'filename' => basename($latest_jpg)
+    ];
+
+    $possible_video = $media_dir . "/" . $base_name . ".mp4";
+    if (file_exists($possible_video)) {
+        $response['latest_video'] = [
+            'url' => basename($possible_video),
+            'filename' => basename($possible_video)
+        ];
     }
 }
+
+// ====================== RECENTE FOTO'S (max 3, zonder duplicaat) ======================
+if (!empty($jpg_files)) {
+    usort($jpg_files, fn($a, $b) => filemtime($b) - filemtime($a));
+    $response['recent_photos'] = array_map('basename', array_slice($jpg_files, 1, 3)); // skip eerste (laatste detectie)
+}
+
+// ====================== LOG ======================
+if (file_exists($log_file)) {
+    $lines = array_slice(file($log_file), -15);
+    $response['log_lines'] = array_map('trim', $lines);
+}
+
+echo json_encode($response);
+?>

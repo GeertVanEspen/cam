@@ -31,7 +31,6 @@ date_default_timezone_set('Europe/Brussels');
         .stat-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 14px 0;
             border-bottom: 1px solid #334155;
         }
@@ -43,13 +42,13 @@ date_default_timezone_set('Europe/Brussels');
             color: #e2e8f0;
         }
         .stat-value {
-            font-size: 2rem;
+            font-size: 2.1rem;
             font-weight: 700;
             color: #60a5fa;
         }
         .back-button {
             display: inline-block;
-            margin: 20px 0 30px 0;
+            margin-bottom: 25px;
             padding: 12px 28px;
             background: #3b82f6;
             color: white;
@@ -66,7 +65,7 @@ date_default_timezone_set('Europe/Brussels');
         <h1 style="text-align:center; margin-bottom:30px;">📊 Statistieken</h1>
 
         <div id="stats-content">
-            <!-- Wordt dynamisch gevuld door JavaScript -->
+            <!-- Wordt gevuld door JavaScript -->
         </div>
     </div>
 
@@ -91,7 +90,7 @@ date_default_timezone_set('Europe/Brussels');
                             <div class="period-card">
                                 <div class="period-title">${p.title}</div>
                                 <div class="stat-row">
-                                    <span class="stat-label">🚗 Auto's</span>
+                                    <span class="stat-label">🚗 Auto\'s</span>
                                     <span class="stat-value">${s.cars}</span>
                                 </div>
                                 <div class="stat-row">
@@ -111,7 +110,6 @@ date_default_timezone_set('Europe/Brussels');
                 });
         }
 
-        // Laad bij openen en ververs elke 30 seconden
         loadDailyStats();
         setInterval(loadDailyStats, 30000);
     </script>
