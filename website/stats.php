@@ -15,36 +15,36 @@ date_default_timezone_set('Europe/Brussels');
             margin: 0 auto;
             padding: 20px;
         }
-        .period-card {
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
             background: #1e2937;
             border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
+            overflow: hidden;
         }
-        .period-title {
-            font-size: 1.25rem;
+        .stats-table th {
+            background: #334155;
+            padding: 16px 20px;
+            text-align: left;
+            font-weight: 600;
             color: #cbd5e1;
-            margin-bottom: 16px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 10px;
         }
-        .stat-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 14px 0;
+        .stats-table td {
+            padding: 14px 20px;
             border-bottom: 1px solid #334155;
         }
-        .stat-row:last-child {
+        .stats-table tr:last-child td {
             border-bottom: none;
         }
-        .stat-label {
-            font-size: 1.1rem;
-            color: #e2e8f0;
-        }
-        .stat-value {
-            font-size: 2.1rem;
+        .number {
+            font-size: 1.35rem;
             font-weight: 700;
             color: #60a5fa;
+            text-align: right;
+        }
+        .period {
+            color: #e2e8f0;
+            font-weight: 500;
         }
         .back-button {
             display: inline-block;
@@ -64,9 +64,18 @@ date_default_timezone_set('Europe/Brussels');
         
         <h1 style="text-align:center; margin-bottom:30px;">📊 Statistieken</h1>
 
-        <div id="stats-content">
-            <!-- Wordt gevuld door JavaScript -->
-        </div>
+        <table class="stats-table">
+            <thead>
+                <tr>
+                    <th>Periode</th>
+                    <th style="text-align:right;">Auto’s</th>
+                    <th style="text-align:right;">MPA’s</th>
+                </tr>
+            </thead>
+            <tbody id="stats-body">
+                <!-- Wordt gevuld door JavaScript -->
+            </tbody>
+        </table>
     </div>
 
     <script src="script.js"></script>
@@ -75,38 +84,35 @@ date_default_timezone_set('Europe/Brussels');
             fetch('api.php?type=stats_overview')
                 .then(r => r.json())
                 .then(data => {
-                    let html = '';
-
                     const periods = [
-                        { title: 'Vandaag',      key: 'today' },
-                        { title: 'Gisteren',     key: 'yesterday' },
-                        { title: 'Deze week',    key: 'this_week' },
-                        { title: 'Deze maand',   key: 'this_month' }
+                        { label: 'Vandaag',       key: 'today' },
+                        { label: 'Gisteren',      key: 'yesterday' },
+                        { label: 'Deze week',     key: 'this_week' },
+                        { label: 'Vorige week',   key: 'previous_week' },
+                        { label: 'Deze maand',    key: 'this_month' },
+                        { label: 'Vorige maand',  key: 'previous_month' },
+                        { label: 'Dit jaar',      key: 'this_year' },
+                        { label: 'Vorig jaar',    key: 'previous_year' }
                     ];
 
+                    let html = '';
                     periods.forEach(p => {
                         const s = data[p.key] || { cars: 0, mpa: 0 };
                         html += `
-                            <div class="period-card">
-                                <div class="period-title">${p.title}</div>
-                                <div class="stat-row">
-                                    <span class="stat-label">🚗 Auto\'s</span>
-                                    <span class="stat-value">${s.cars}</span>
-                                </div>
-                                <div class="stat-row">
-                                    <span class="stat-label">🚨 MPA</span>
-                                    <span class="stat-value">${s.mpa}</span>
-                                </div>
-                            </div>
+                            <tr>
+                                <td class="period">${p.label}</td>
+                                <td class="number">${s.cars}</td>
+                                <td class="number">${s.mpa}</td>
+                            </tr>
                         `;
                     });
 
-                    document.getElementById('stats-content').innerHTML = html;
+                    document.getElementById('stats-body').innerHTML = html;
                 })
                 .catch(err => {
                     console.error(err);
-                    document.getElementById('stats-content').innerHTML = 
-                        '<p style="color:#ef4444; text-align:center; padding:40px;">Kon statistieken niet ophalen.</p>';
+                    document.getElementById('stats-body').innerHTML = 
+                        '<tr><td colspan="3" style="text-align:center; color:#ef4444; padding:40px;">Kon statistieken niet ophalen.</td></tr>';
                 });
         }
 

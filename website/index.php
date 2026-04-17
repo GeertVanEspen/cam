@@ -12,21 +12,33 @@ $title = "MPA Detector v1.0";
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <header>
-            <div class="header-content">
-                <h1>🚗 MPA Detector <span class="version">v1.0</span></h1>
-                <div id="server-time" class="server-time"></div>
-            </div>
-            <div id="status" class="status">
-                Detector: <span id="detector-status">Offline</span>
+        <header style="margin-bottom: 20px;">
+            <h1 style="margin: 0 0 10px 0;">🚗 MPA Detector <span class="version">v1.0</span></h1>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+
+                <div>
+                    <div id="server-time" class="server-time">Server tijd: --:--:--</div>
+                    <div id="status" class="status">
+                        Detector: <span id="detector-status">Offline</span>
+                    </div>
+                </div>
+
+                <div>
+                    <a href="../index.html" style="text-decoration: none;">
+                        <button style="padding: 8px 14px; background: #ffffff; color: #1a1a1a; border: 1px solid #ccc; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
+                            <span>&#10229;</span> Terug
+                        </button>
+                    </a>
+                </div>
+
             </div>
         </header>
 
         <!-- Statistieken knop naast meldingen -->
         <div class="card" style="display:flex; gap:15px;">
             <div style="flex:1;">
-                <h2>Meldingen</h2>
+                <!--h2>Meldingen</h2-->
                 <div class="toggle-container">
                     <button id="toggle-meldingen" class="toggle-btn">
                         <span id="toggle-text">Meldingen AAN</span>
@@ -35,7 +47,7 @@ $title = "MPA Detector v1.0";
             </div>
             <div style="flex:1; display:flex; align-items:center;">
                 <a href="stats.php" style="text-decoration:none; width:100%;">
-                    <button style="width:100%; padding:18px; font-size:1.05rem; background:#3b82f6; color:white; border:none; border-radius:12px;">
+                    <button style="width:100%; padding:12px; font-size:0.85rem; background:#3b82f6; color:white; border:none; border-radius:12px;">
                         📊 Statistieken
                     </button>
                 </a>
@@ -44,7 +56,7 @@ $title = "MPA Detector v1.0";
 
         <!-- Statistieken -->
         <div class="card">
-            <h2>Statistieken sinds deze of gisteren morgen</h2>
+            <h2>Statistieken sinds 9u00</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">🚗</div>

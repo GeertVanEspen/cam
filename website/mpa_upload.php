@@ -47,7 +47,7 @@ if ($hash !== "8071816ed8087376ed378f15a94ed306")
 
 ////////////////////
 // ====================== TYPE BEPALEN ======================
-$type = $_POST['type'] ?? ''; // 'photo', 'video', 'stats' of 'check_meldingen'
+$type = $_POST['type'] ?? ''; // 'photo', 'video', 'stats', 'log' of 'check_meldingen'
 
 if ($type === 'check_meldingen')
 {
@@ -61,7 +61,7 @@ if ($type === 'check_meldingen')
   exit;   // stop hier, geen verdere verwerking
 }
 
-if (!in_array($type, ['photo', 'video', 'stats']))
+if (!in_array($type, ['photo', 'video', 'stats', 'log']))
 {
   http_response_code(400);
   die('Invalid type');
@@ -69,8 +69,30 @@ if (!in_array($type, ['photo', 'video', 'stats']))
 
 if ($type === 'stats')
 {
-  // ==================== NIEUWE STATS HANDLING ====================
+  // ==================== STATS HANDLING ====================
   handle_stats_upload();
+  exit;
+}
+
+// ====================== REMOTE LOGGING ======================
+if ($type === 'log')
+{
+  $message = $_POST['message'] ?? '';
+
+  if (empty($message))
+  {
+    http_response_code(400);
+    echo json_encode(['status' => 'error', 'message' => 'No message provided']);
+    exit;
+  }
+
+  $log_regel = "[$tijd] " . trim($message) . PHP_EOL;
+  file_put_contents($log_bestand, $log_regel, FILE_APPEND);
+
+  echo json_encode([
+    'status' => 'success',
+    'message' => 'Log entry added'
+  ]);
   exit;
 }
 
